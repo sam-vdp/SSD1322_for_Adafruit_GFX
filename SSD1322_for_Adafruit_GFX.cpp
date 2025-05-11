@@ -32,7 +32,9 @@ You will find the orginal Library here https://github.com/adafruit/Adafruit_SSD1
 
 
 #include "SSD1322_for_Adafruit_GFX.h"
+#ifdef ADAFRUIT_SPLASH
 #include "splash.h"
+#endif
 
 // CONSTRUCTORS, DESTRUCTOR ------------------------------------------------
 
@@ -240,6 +242,8 @@ void Adafruit_SSD1322::display(void) {
   uint8_t rows = HEIGHT;
 
   uint8_t bytes_per_row = WIDTH / 2; // See fig 10-1 (64 bytes, 128 pixels)
+  uint8_t bytes_per_col = 2;   // Two bytes (four pixels) in each column
+  uint8_t first_col_hw = 0x1C; // Offset of first column in display buffer
   uint8_t maxbuff = 128;
 
   /*
@@ -257,6 +261,10 @@ void Adafruit_SSD1322::display(void) {
   int16_t row_start = min((int16_t)(bytes_per_row - 1), (int16_t)(window_x1 / 2));
   int16_t row_end = max((int16_t)0, (int16_t)(window_x2 / 2));
 
+  // Truncate to column boundaries
+  row_start = (row_start / bytes_per_col) * bytes_per_col;
+  row_end = ((row_end + bytes_per_col - 1) / bytes_per_col) * bytes_per_col - 1;
+
   int16_t first_row = min((int16_t)(rows - 1), (int16_t)window_y1);
   int16_t last_row = max((int16_t)0, (int16_t)window_y2);
 
@@ -271,6 +279,7 @@ void Adafruit_SSD1322::display(void) {
   Serial.print(" -> ");
   Serial.println(row_end);
   */
+  
 
   if (i2c_dev) { // I2C
     // Set high speed clk
@@ -279,11 +288,11 @@ void Adafruit_SSD1322::display(void) {
   }
 
   oled_command(SSD1322_SETROW);       // 0x75, Oled from Row 00h(0) to 3Fh(63)
-  oled_data(0x00);                    // 00
-  oled_data(0x3F);                    // 63, Testing, old value 127 (0x7F)
+  oled_data(first_row);
+  oled_data(last_row);
   oled_command(SSD1322_SETCOLUMN);    // 0x15, Oled from Column 1Ch(28) to 5B(91)
-  oled_data(0x1C);                    // 28
-  oled_data(0x5B);                    // 91
+  oled_data(first_col_hw + row_start / 2);
+  oled_data(first_col_hw + row_end / 2);
   oled_command(SSD1322_ENWRITEDATA);  // 0x5C
 
   for (uint8_t row = first_row; row <= last_row; row++) {
@@ -312,15 +321,10 @@ void Adafruit_SSD1322::display(void) {
   }
 
   // reset dirty window
-  window_x1 = 0;
-  window_y1 = 0;
-  window_x2 = WIDTH - 1;
-  window_y2 = HEIGHT - 1;
-//  window_x1 = 1024;
-//  window_y1 = 1024;
-//  window_x2 = -1;
-//  window_y2 = -1;
-
+  window_x1 = 1024;
+  window_y1 = 1024;
+  window_x2 = -1;
+  window_y2 = -1;
 }
 
 /*!
