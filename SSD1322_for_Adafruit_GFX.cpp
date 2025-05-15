@@ -263,7 +263,7 @@ void Adafruit_SSD1322::display(void) {
 
   // Truncate to column boundaries
   row_start = (row_start / bytes_per_col) * bytes_per_col;
-  row_end = ((row_end + bytes_per_col - 1) / bytes_per_col) * bytes_per_col - 1;
+  row_end = (row_end / bytes_per_col + 1) * bytes_per_col - 1;
 
   int16_t first_row = min((int16_t)(rows - 1), (int16_t)window_y1);
   int16_t last_row = max((int16_t)0, (int16_t)window_y2);
